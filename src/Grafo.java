@@ -1,5 +1,8 @@
 public class Grafo {
 	
+	/**
+	 * Adiciona o n�mero de vertices.
+	 */
 	private final int NUMERO_VERTICES;
 	
 	/**
@@ -28,7 +31,7 @@ public class Grafo {
 		criaMatriz();
 		
 		// Manda imprimir.
-		//imprimirMatriz();
+		imprimirMatriz();
 	}
 	
 	/**
@@ -59,7 +62,7 @@ public class Grafo {
 	 * @throws Exception
 	 * 		   Se uma matriz n�o for criada ou n�o inicializada.
 	 */
-	public void imprimirMatriz() throws Exception {
+	private void imprimirMatriz() throws Exception {
 		if (matriz == null) {
 			throw new Exception("Matriz nula encontrada");
 		}

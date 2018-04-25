@@ -1,13 +1,11 @@
 import java.awt.event.ActionEvent;
 import java.io.*;
-import java.text.ParseException;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 @SuppressWarnings("serial")
 public class GrafoWindow extends JFrame{
-	
+
 	private JLabel lblOrigem, lblDestino, lblKm, lblCodigoOrigem, lblCodigoDestino;
 	private JTextField txfOrigem, txfDestino, txfKm, txfCodigoOrigem, txfCodigoDestino;
 	private JButton btnSalvar, btnLimpar, btnProcessar, btnPlus, btnMinus;
@@ -29,11 +27,9 @@ public class GrafoWindow extends JFrame{
 
 	}
 
-	//Abre o arquivo com os dados e retorna o numero de destinos do mesmo
-	private static int abrirArquivo() {
+	//Abre o arquivo com os dados
+	private static void abrirArquivo() {
 
-		int numDestinos = 0;
-		
 		try {
 			InputStream is = new FileInputStream(System.getProperty("user.home")
 					+System.getProperty("file.separator")+"tabela.csv");
@@ -43,28 +39,16 @@ public class GrafoWindow extends JFrame{
 			String linha;
 			
 			while ((linha = br.readLine()) != null) {				
-				String s[] = linha.split(",");					
+				String s[] = linha.split(",");			
 				tblModel.addRow(s);	
-				
-				if (Integer.parseInt(s[0]) > numDestinos) {
-					numDestinos = Integer.parseInt(s[0]);
-				}
-				
-				if (Integer.parseInt(s[2]) > numDestinos) {
-					numDestinos = Integer.parseInt(s[2]);
-				} 
-				
 			}
-			
+
 			br.close();
 
 		} catch (IOException e) {
 			e.printStackTrace();
 
 		} 
-		
-		System.out.println(numDestinos);
-		return numDestinos;
 	}
 
 	//Salva o arquivo com os dados
@@ -76,7 +60,7 @@ public class GrafoWindow extends JFrame{
 		try {
 			os = new FileOutputStream(savePath);
 			OutputStreamWriter osw = new OutputStreamWriter(os);
-			BufferedWriter bf = new BufferedWriter(osw);
+			BufferedWriter bw = new BufferedWriter(osw);
 
 			String modelString = "";
 
@@ -89,22 +73,57 @@ public class GrafoWindow extends JFrame{
 			}
 			//System.out.println(modelString);
 
-			bf.write(modelString);
-			bf.close();
+			bw.write(modelString);
+			bw.flush();
+			bw.close();
 
 		} catch (IOException e) {
 			e.printStackTrace();
 
 		}
 	}
-	
-	//calcula o menor caminho entre dois pontos
-	private static void calculaCaminho() {
-		String origem = "", destino = "";
+
+	//Percorre toda tblDados, checa o numero de destinos e gera o grafo usando Dijkstra.inserirAresta
+	private static void menorCaminho() {
 		
-		origem = JOptionPane.showInputDialog("Código origem");
-		destino = JOptionPane.showInputDialog("Código destino");
+		int numDestinos = 0;
+		
+		//Checa número de destinos disponíveis no arquivo
+		for (int i = 0; i < tblModel.getRowCount(); i++) {
+			if (Integer.parseInt((String) tblModel.getValueAt(i, 0)) > numDestinos) {
+				numDestinos = Integer.parseInt((String) tblModel.getValueAt(i, 0));
+			}
+			
+			if (Integer.parseInt((String) tblModel.getValueAt(i, 2)) > numDestinos) {
+				numDestinos = Integer.parseInt((String) tblModel.getValueAt(i, 2));
+			}
+		}
+		
+		try {
+			Dijkstra dij = new Dijkstra(numDestinos);
+			
+			System.out.println(numDestinos);
+			
+			//Popula a matriz de destinos e calcula a rota mais próxima
+			for (int i = 0; i < tblModel.getRowCount(); i++) {
 				
+				int codOrigem = Integer.parseInt((String) tblModel.getValueAt(i, 0)) - 1;
+				int codDestino = Integer.parseInt((String) tblModel.getValueAt(i, 2)) - 1;
+				int distancia = Integer.parseInt((String) tblModel.getValueAt(i, 4));
+
+				dij.inserirAresta(i, i, 0);
+				dij.inserirAresta(codOrigem, codDestino, distancia);
+				dij.inserirAresta(codDestino, codOrigem, distancia);
+				
+				System.out.print("\n");
+			}
+			
+			dij.menorCaminhoEncontrar(0, 3);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	
 	}
 	
 	//Cria os componentes e os posiciona na janela
@@ -161,7 +180,8 @@ public class GrafoWindow extends JFrame{
 		btnSalvar.setAction(new AbstractAction("Salvar") {
 
 			@Override
-			public void actionPerformed(ActionEvent arg0) {				
+			public void actionPerformed(ActionEvent arg0) {
+				
 				salvarArquivo();
 
 			}
@@ -169,15 +189,7 @@ public class GrafoWindow extends JFrame{
 		btnSalvar.setBounds(10, 445, 100, 25);
 		getContentPane().add(btnSalvar);
 
-		btnProcessar = new JButton();
-		btnProcessar.setAction(new AbstractAction("Processar") {
-			
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				calculaCaminho();				
-				
-			}
-		});
+		btnProcessar = new JButton("Processar");
 		btnProcessar.setBounds(101, 445, 140, 25);
 		getContentPane().add(btnProcessar);
 
@@ -233,41 +245,13 @@ public class GrafoWindow extends JFrame{
 		//FIM TABELA
 	}
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 
 		new GrafoWindow().setVisible(true);
-		int numDestinos = abrirArquivo();	
+		abrirArquivo();
+	
+		menorCaminho();
 
-		Grafo DB = new Grafo(numDestinos);
-		
-		for (int i = 0; i < tblModel.getRowCount(); i++) {
-			
-			/*
-			System.out.println("***\n i = " + i);
-			System.out.println(Integer.parseInt((String) tblModel.getValueAt(i, 0)));
-			System.out.println(Integer.parseInt((String) tblModel.getValueAt(i, 2)));
-			System.out.println(Integer.parseInt((String) tblModel.getValueAt(i, 4)) + "\n***");
-			*/
-			
-			for (int j = 0; j < tblModel.getRowCount(); j++) {
-				//DB.inserirAresta(Integer.parseInt((String) tblModel.getValueAt(i, 0)), Integer.parseInt((String) tblModel.getValueAt(i, 2)), Integer.parseInt((String) tblModel.getValueAt(i, 4)));
-				
-				if (i == j) {
-					DB.inserirAresta(i, j, 0);
-					
-				//caso o cod. de destino for igual ao de Grafo[i]
-				} else if (Integer.parseInt((String) tblModel.getValueAt(j, 2)) == Integer.parseInt((String) tblModel.getValueAt(i, 0))){
-					
-					System.out.println("true " + i + " " + j);
-					DB.inserirAresta(i, j, Integer.parseInt((String) tblModel.getValueAt(i, 4)));
-					
-				} else {
-					DB.inserirAresta(i, j, 0);
-				}
-			}	
-		}
-		
-		DB.imprimirMatriz();
 	}
 
 

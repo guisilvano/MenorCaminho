@@ -66,7 +66,7 @@ public class Dijkstra extends Grafo {
 	 * @param destino
 	 * @throws Exception
 	 */
-	private void menorCaminhoEncontrar(int origem, int destino) throws Exception {
+	public void menorCaminhoEncontrar(int origem, int destino) throws Exception {
 		
 		// Se origem for zero.
 		if (origem < 0) {
